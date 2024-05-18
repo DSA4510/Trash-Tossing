@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections;
+using UnityEngine.InputSystem.EnhancedTouch;
+using System.Diagnostics.Tracing;
 
 public class DeactivateEvent : MonoBehaviour
 {
@@ -9,9 +11,13 @@ public class DeactivateEvent : MonoBehaviour
     private GameObject Plane;
     private BoxCollider specificCollider;
 
+    private UnityEngine.Touch touch;
+    private Vector2 pos_begin;
+    private Vector2 pos_end;
     // private TextMeshPro textMeshPro
     private void Start()
     {
+        gameObject.tag = "Bin";
         BoxCollider[] boxColliders = GetComponentsInChildren<BoxCollider>();
 
         // Select the last Box Collider component
@@ -38,22 +44,37 @@ public class DeactivateEvent : MonoBehaviour
         }
 
         // Check if the player slides their phone
-        if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Moved)
+        touch = Input.GetTouch(0);
+        TouchPhase phase = touch.phase;
+        switch (phase)
         {
-            // Attach the Rotate.cs script to the instantiated object
-            rotate rotateScript = instantiatedObject.GetComponent<rotate>();
-            if (rotateScript == null)
-            {
-                rotateScript = instantiatedObject.AddComponent<rotate>();
-            }
+            case TouchPhase.Began:
+                pos_begin = touch.position;
+                break;
+            case TouchPhase.Ended:
+                pos_end = touch.position;
+                Vector2 touchDeltaPosition = pos_end - pos_begin;
+                rotate rotateScript = instantiatedObject.GetComponent<rotate>();
+                if (rotateScript == null)
+                {
+                    rotateScript = instantiatedObject.AddComponent<rotate>();
+                }
 
-            // Pass information of the user's slide to calculate necessary force
-            Vector2 touchDeltaPosition = Input.GetTouch(0).deltaPosition;
-            float forceApplied = touchDeltaPosition.y;
-            rotateScript.forceApplied = forceApplied * 0.08f;
-            rotateScript.specificCollider = specificCollider;
-            instantiatedObject = null;
-            StartCoroutine(delayThrow());
+                // Pass information of the user's slide to calculate necessary force
+                Vector3 slideDirection = new Vector3(touchDeltaPosition.x, 0f, touchDeltaPosition.y).normalized;
+                // Calculate the angle between the camera's forward vector and the slide direction
+                float slideAngle = Vector3.SignedAngle(Camera.main.transform.forward, slideDirection, Vector3.up);
+                slideAngle = Mathf.Clamp(slideAngle, -90f, 90f) * (1f/6); // Clamp the angle within -60 to 60 degrees
+
+                float forceApplied = touchDeltaPosition.sqrMagnitude;
+                Debug.Log("Force: " + (forceApplied*0.00001f).ToString());
+                rotateScript.forceApplied = forceApplied * 0.00001f;
+                rotateScript.specificCollider = specificCollider;
+                rotateScript.slideAngle = slideAngle;
+
+                instantiatedObject = null;
+                StartCoroutine(delayThrow());
+                break;
         }
     }
 
@@ -65,6 +86,7 @@ public class DeactivateEvent : MonoBehaviour
 
         // Instantiate the prefab at the calculated position and rotation
         instantiatedObject = Instantiate(throwPrefab, spawnPosition, spawnRotation);
+        Debug.Log("Throw");
     }
 
     IEnumerator delayThrow()

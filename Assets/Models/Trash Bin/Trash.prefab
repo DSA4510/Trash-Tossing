@@ -29,7 +29,7 @@ GameObject:
   - component: {fileID: 1654082017412496527}
   m_Layer: 0
   m_Name: Trash
-  m_TagString: Untagged
+  m_TagString: Bin
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

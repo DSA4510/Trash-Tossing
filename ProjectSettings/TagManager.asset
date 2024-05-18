@@ -8,6 +8,8 @@ TagManager:
   - ARPlane
   - RealPlane
   - Score
+  - Bin
+  - Wind
   layers:
   - Default
   - TransparentFX
